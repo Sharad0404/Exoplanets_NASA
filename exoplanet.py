@@ -3,18 +3,45 @@ import pandas as pd
 import numpy as np
 import joblib
 import os
+import requests # Make sure this is imported
+
+# --- Function to Download Files ---
+def download_file(url, local_filename):
+    """Downloads a file from a URL if it doesn't exist locally."""
+    if not os.path.exists(local_filename):
+        # Create the directory if it doesn't exist
+        os.makedirs(os.path.dirname(local_filename), exist_ok=True)
+        st.info(f"Downloading {os.path.basename(local_filename)}...")
+        with requests.get(url, stream=True) as r:
+            r.raise_for_status()
+            with open(local_filename, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    f.write(chunk)
+    return local_filename
 
 # --- Load the Saved Model and Objects ---
-# Use caching to load the model only once
 @st.cache_resource
 def load_model():
-    """Loads the saved model, scaler, and label encoder."""
+    """Downloads and loads the saved model, scaler, and label encoder."""
     model_dir = "saved_models"
-    model = joblib.load(os.path.join(model_dir, 'exoplanet_stacking_model.joblib'))
-    scaler = joblib.load(os.path.join(model_dir, 'scaler.joblib'))
-    le = joblib.load(os.path.join(model_dir, 'label_encoder.joblib'))
+
+    # --- Your URLs are now in the code ---
+    MODEL_URL = "https://github.com/Sharad0404/Exoplanets_NASA/releases/download/Exoplanet/exoplanet_stacking_model.joblib"
+    SCALER_URL = "https://github.com/Sharad0404/Exoplanets_NASA/releases/download/Exoplanet/scaler.joblib"
+    LE_URL = "https://github.com/Sharad0404/Exoplanets_NASA/releases/download/Exoplanet/label_encoder.joblib"
+    
+    # Download files to the 'saved_models' subdirectory
+    model_path = download_file(MODEL_URL, os.path.join(model_dir, 'exoplanet_stacking_model.joblib'))
+    scaler_path = download_file(SCALER_URL, os.path.join(model_dir, 'scaler.joblib'))
+    le_path = download_file(LE_URL, os.path.join(model_dir, 'label_encoder.joblib'))
+
+    # Load objects from the downloaded files
+    model = joblib.load(model_path)
+    scaler = joblib.load(scaler_path)
+    le = joblib.load(le_path)
     return model, scaler, le
 
+# --- Your original app code starts here ---
 model, scaler, le = load_model()
 
 # --- Build the User Interface ---
